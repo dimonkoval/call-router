@@ -10,5 +10,5 @@ target/
 .DS_Store
 Thumbs.db
 
-# Optional: локальні бібліотеки, які не потрібно трекати
+# Optional:
 lib/
