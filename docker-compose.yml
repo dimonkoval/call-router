@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  callrouter-db:
+    image: postgres:15-alpine
+    container_name: callrouter-db
+    env_file:
+      - .env  # Використовуємо той самий .env файл
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_LOGIN}    # Бере з .env
+      POSTGRES_PASSWORD: ${DB_PASSWORD}  # Бере з .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Скрипт ініціалізації
+    ports:
+      - "5433:5432"
+    networks:
+      - callrouter-net
+
+volumes:
+  postgres_data:
+
+networks:
+  callrouter-net:
+    driver: bridge
