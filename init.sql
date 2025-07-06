@@ -1,0 +1,2 @@
+CREATE SCHEMA IF NOT EXISTS callrouter;
+GRANT ALL PRIVILEGES ON SCHEMA callrouter TO appuser;
