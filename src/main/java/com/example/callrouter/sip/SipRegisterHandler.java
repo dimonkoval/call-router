@@ -2,7 +2,6 @@ package com.example.callrouter.sip;
 
 import com.example.callrouter.model.UserRegistration;
 import javax.sip.RequestEvent;
-import javax.sip.address.Address;
 import javax.sip.address.SipURI;
 import javax.sip.header.ContactHeader;
 import javax.sip.header.FromHeader;

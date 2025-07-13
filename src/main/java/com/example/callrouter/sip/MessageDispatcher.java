@@ -4,46 +4,57 @@ import javax.sip.ClientTransaction;
 import javax.sip.RequestEvent;
 import javax.sip.SipProvider;
 import javax.sip.address.AddressFactory;
-import javax.sip.address.SipURI;
 import javax.sip.header.HeaderFactory;
+import javax.sip.header.RecordRouteHeader;
+import javax.sip.header.ViaHeader;
 import javax.sip.message.MessageFactory;
 import javax.sip.message.Request;
-
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
+@Getter
 public class MessageDispatcher {
 
     private final SipProvider sipProvider;
     private final MessageFactory messageFactory;
     private final AddressFactory addressFactory;
     private final HeaderFactory headerFactory;
+    @Value("${sip.ip}")
+    private String configuredIp;
+
+    @Value("${sip.port}")
+    private int configuredPort;
 
     public void proxyRequest(RequestEvent evt, String nextHopUri) {
         try {
-            Request originalRequest = evt.getRequest();
+            String bindAddress = configuredIp;
+            int bindPort = configuredPort;
 
-            // Створити копію запиту
-            Request newRequest = (Request) originalRequest.clone();
+            Request original = evt.getRequest();
+            Request newRequest = (Request) original.clone();
+            newRequest.setRequestURI(addressFactory.createURI(nextHopUri));
 
-            // Змінити Request-URI
-            SipURI newUri = (SipURI) addressFactory.createURI(nextHopUri);
-            newRequest.setRequestURI(newUri);
+            String rrUri = String.format("sip:%s:%d;transport=udp;lr", bindAddress, bindPort);
+            javax.sip.address.Address rrAddress = addressFactory.createAddress(rrUri);
+            RecordRouteHeader rr = headerFactory.createRecordRouteHeader(rrAddress);
+            newRequest.addHeader(rr);
 
-            // Обов'язково видалити попередній Via і додати свій (для правильного маршруту)
-            newRequest.removeHeader("Via");
-            newRequest.addHeader(headerFactory.createViaHeader("localhost", sipProvider.getListeningPoint("udp").getPort(), "udp", null));
+            newRequest.removeHeader(ViaHeader.NAME);
+            ViaHeader via = headerFactory.createViaHeader(bindAddress, bindPort, "udp", null);
+            newRequest.addHeader(via);
 
-            // Створити нову транзакцію
-            ClientTransaction transaction = sipProvider.getNewClientTransaction(newRequest);
-
-            // Надіслати запит
-            transaction.sendRequest();
+            ClientTransaction tx = sipProvider.getNewClientTransaction(newRequest);
+            tx.sendRequest();
 
         } catch (Exception e) {
-            e.printStackTrace(); // або логування
+            log.error("Proxy INVITE failed", e);
         }
     }
+
 }
