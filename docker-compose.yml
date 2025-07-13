@@ -4,23 +4,56 @@ services:
   callrouter-db:
     image: postgres:15-alpine
     container_name: callrouter-db
-    env_file:
-      - .env  # Використовуємо той самий .env файл
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_LOGIN}    # Бере з .env
-      POSTGRES_PASSWORD: ${DB_PASSWORD}  # Бере з .env
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: callrouter
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Скрипт ініціалізації
     ports:
-      - "5433:5432"
+      - "5432:5432"
+    networks:
+      - callrouter-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d callrouter"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: callrouter-redis
     networks:
       - callrouter-net
 
-volumes:
-  postgres_data:
+  callrouter-app:
+    build: .
+    container_name: callrouter-app
+    ports:
+      - "8090:8090"
+      - "5060:5060/udp"
+    depends_on:
+      callrouter-db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DB_LOGIN:         "appuser"
+      DB_PASSWORD:      "123"
+      DB_NAME:          "callrouter"
+      SIP_IP:           "0.0.0.0"
+      SIP_PORT:         "5060"
+    networks:
+      - callrouter-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   callrouter-net:
     driver: bridge
+
+volumes:
+  postgres_data:

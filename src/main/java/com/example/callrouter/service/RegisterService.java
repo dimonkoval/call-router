@@ -1,53 +1,66 @@
 package com.example.callrouter.service;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
 
+import javax.sip.SipProvider;
+import javax.sip.TransactionUnavailableException;
 import javax.sip.message.MessageFactory;
 import javax.sip.message.Response;
 import org.springframework.stereotype.Service;
-import java.time.Duration;                        // ← для TTL
-import javax.sip.RequestEvent;                    // ← JAIN-SIP
-import javax.sip.ServerTransaction;               // ← для sendResponse
-import javax.sip.message.Request;                 // ← JAIN-SIP
-import javax.sip.message.Response;                // ← JAIN-SIP
-import javax.sip.header.FromHeader;               // ← JAIN-SIP
+import java.time.Duration;
+import javax.sip.RequestEvent;
+import javax.sip.ServerTransaction;
+import javax.sip.message.Request;
+import javax.sip.header.FromHeader;
 import javax.sip.header.ContactHeader;
 
 @Service
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class RegisterService {
     private final RedisTemplate<String, String> redis;
-    private static final Duration TTL = Duration.ofMinutes(30);
     private final MessageFactory messageFactory;
+    private final SipProvider sipProvider;
+    private static final Duration TTL = Duration.ofMinutes(30);
 
-//    public RegisterService(RedisTemplate<String, String> redis) {
-//        this.redis = redis;
-//    }
+    public RegisterService(RedisTemplate<String, String> redis,
+                           MessageFactory messageFactory, @Lazy SipProvider sipProvider) {
+        this.redis = redis;
+        this.messageFactory = messageFactory;
+        this.sipProvider = sipProvider;
+    }
 
     public void handle(RequestEvent evt) {
         Request req = evt.getRequest();
-        String userUri = ((FromHeader) req.getHeader(FromHeader.NAME)).getAddress().getURI().toString();
-        String contactUri = ((ContactHeader) req.getHeader(ContactHeader.NAME)).getAddress().getURI().toString();
+        String userUri = ((FromHeader) req.getHeader(FromHeader.NAME))
+                .getAddress().getURI().toString();
+        String contactUri = ((ContactHeader) req.getHeader(ContactHeader.NAME))
+                .getAddress().getURI().toString();
         String key = "registration:" + userUri;
         redis.opsForValue().set(key, contactUri, TTL);
-        // send 200 OK
-//        Response ok = evt.getDialog().createResponse(Response.OK);
-//        sendResponse(evt, ok);
+
+        ServerTransaction tx = evt.getServerTransaction();
+
+        if (tx == null) {
+            try {
+
+                if (req.getMethod().equals(Request.REGISTER) && evt.getDialog() == null) {
+                    tx = sipProvider.getNewServerTransaction(req);
+                } else {
+                    throw new IllegalStateException("No transaction for non-initial request");
+                }
+            } catch (TransactionUnavailableException | javax.sip.TransactionAlreadyExistsException e) {
+                throw new RuntimeException("Cannot create transaction for REGISTER", e);
+            }
+        }
+
         try {
-            ServerTransaction tx = evt.getServerTransaction();
             Response ok = messageFactory.createResponse(Response.OK, req);
             tx.sendResponse(ok);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to send 200 OK for REGISTER", e);
         }
     }
 
-    private void sendResponse(RequestEvent evt, Response resp) {
-        try {
-            evt.getServerTransaction().sendResponse(resp);
-        } catch (Exception e) {
-            // логування помилки
-        }
-    }
 }
+

@@ -11,8 +11,5 @@ public class SipInviteHandler {
     public void handle(RequestEvent evt) {
         Request req = evt.getRequest();
         String target = ((SipURI)((ToHeader)req.getHeader(ToHeader.NAME)).getAddress().getURI()).getUser();
-        // lookup Redis for "user:" + target
-        // if missing, send 404 via ServerTransaction
-        // else forward INVITE to next hop
     }
 }

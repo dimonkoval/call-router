@@ -4,6 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.1.2</version>
+    </parent>
+
     <groupId>com.example.callrouter</groupId>
     <artifactId>call-router</artifactId>
     <version>1.0.0</version>
@@ -20,17 +26,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
     </properties>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring.boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+
 
     <dependencies>
         <!-- Spring Boot Core -->
@@ -62,21 +58,17 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- SIP: local JARs in lib/ -->
         <dependency>
             <groupId>javax.sip</groupId>
             <artifactId>jain-sip-ri</artifactId>
             <version>1.2.263</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/src/main/java/com/example/callrouter/lib/jain-sip-ri-1.2.263.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>javax.sip</groupId>
             <artifactId>jain-sip-api</artifactId>
             <version>1.2</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/src/main/java/com/example/callrouter/lib/jain-sip-api-1.2.jar</systemPath>
         </dependency>
+
 
         <!-- JSON serialization -->
         <dependency>
@@ -84,12 +76,15 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <version>1.18.30</version>
+            <scope>provided</scope>
         </dependency>
+
 
         <!-- Testing -->
         <dependency>
@@ -108,7 +103,47 @@
             <artifactId>log4j</artifactId>
             <version>1.2.17</version>
         </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>1.5.5.Final</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct-processor</artifactId>
+            <version>1.5.5.Final</version>
+            <scope>provided</scope>
+        </dependency>
+
+
+        <dependency>
+
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.3</version>
+        </dependency>
+
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>nist-sip</id>
+            <url>https://maven.java.net/content/repositories/releases/</url>
+        </repository>
+        <repository>
+            <id>maven-central</id>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
+        <repository>
+            <id>confluence</id>
+            <url>https://maven.confluence.telekom.de/repository/maven-public/</url>
+        </repository>
+    </repositories>
 
     <build>
         <plugins>
@@ -128,6 +163,19 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <parameters>true</parameters>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>1.5.5.Final</version>
+                        </path>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.30</version>
+                        </path>
+                    </annotationProcessorPaths>
+
                 </configuration>
             </plugin>
         </plugins>
