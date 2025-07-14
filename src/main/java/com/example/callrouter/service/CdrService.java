@@ -34,4 +34,24 @@ public class CdrService {
                     throw new RuntimeException("CDR not found or already completed for callId: " + callId);
                 });
     }
+
+    @Transactional
+    public void onReject(String callId, long endTime) {
+        repo.findByCallIdAndStatus(callId, "in_progress")
+                .ifPresentOrElse(rec -> {
+                    repo.markRejected(callId, endTime, 0);
+                }, () -> {
+                    throw new RuntimeException("CDR not found or already completed for callId: " + callId);
+                });
+    }
+
+    @Transactional
+    public void onMissed(String callId, long endTime) {
+        repo.findByCallIdAndStatus(callId, "in_progress")
+                .ifPresentOrElse(rec -> {
+                    repo.markMissed(callId, endTime, 0);
+                }, () -> {
+                    throw new RuntimeException("CDR not found or already completed for callId: " + callId);
+                });
+    }
 }

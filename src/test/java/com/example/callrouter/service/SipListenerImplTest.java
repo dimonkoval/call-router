@@ -15,7 +15,7 @@ class SipListenerImplTest {
     @Mock private RegisterService registerService;
     @Mock private InviteService inviteService;
     @Mock private CallService callService;
-
+    @Mock private  CdrService cdrService;
     @Mock private RequestEvent requestEvent;
     @Mock private Request request;
     @Mock private CallIdHeader callIdHeader;
@@ -25,7 +25,7 @@ class SipListenerImplTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        listener = new SipListenerImpl(registerService, inviteService, callService);
+        listener = new SipListenerImpl(registerService, inviteService, callService, cdrService);
 
         when(requestEvent.getRequest()).thenReturn(request);
         when(request.getHeader(CallIdHeader.NAME)).thenReturn(callIdHeader);
