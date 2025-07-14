@@ -28,4 +28,50 @@ public interface CdrRepository extends JpaRepository<CallDetailRecord, Long> {
             @Param("endTime") long endTime,
             @Param("duration") long duration
     );
+
+    @Modifying
+    @Query("""
+      UPDATE CallDetailRecord c
+        SET c.endTime = :endTime,
+            c.duration = :duration,
+            c.status   = 'rejected'
+      WHERE c.callId = :callId
+        AND c.status = 'in_progress'
+    """)
+    int markRejected(
+            @Param("callId") String callId,
+            @Param("endTime") long endTime,
+            @Param("duration") long duration
+    );
+
+    @Modifying
+    @Query("""
+      UPDATE CallDetailRecord c
+        SET c.endTime = :endTime,
+            c.duration = :duration,
+            c.status   = 'missed'
+      WHERE c.callId = :callId
+        AND c.status = 'in_progress'
+    """)
+    int markMissed(
+            @Param("callId") String callId,
+            @Param("endTime") long endTime,
+            @Param("duration") long duration
+    );
+
+    @Modifying
+    @Query("""
+UPDATE CallDetailRecord c
+   SET c.endTime = :timestamp,
+       c.duration = :timestamp - c.startTime,
+       c.status   = :newStatus
+ WHERE c.callId = :callId
+   AND c.status = 'in_progress'
+""")
+    int markStatus(
+            @Param("callId") String callId,
+            @Param("timestamp") long timestamp,
+            @Param("newStatus") String newStatus
+    );
+
 }

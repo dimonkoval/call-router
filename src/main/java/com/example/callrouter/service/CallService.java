@@ -26,13 +26,11 @@ public class CallService {
 
     public void handle(RequestEvent evt) {
         Request req = evt.getRequest();
-        log.info("Обробка BYE запиту: {}", req);
+        log.info("BYE request processing: {}", req);
         String callId = null;
 
         try {
             callId = ((CallIdHeader) req.getHeader(CallIdHeader.NAME)).getCallId();
-            String from = ((FromHeader) req.getHeader(FromHeader.NAME)).getAddress().getURI().toString();
-            String to = ((ToHeader) req.getHeader(ToHeader.NAME)).getAddress().getURI().toString();
 
             String redisKey = REDIS_KEY_PREFIX + callId;
             String startStr = redis.opsForValue().getAndDelete(redisKey);
@@ -44,14 +42,14 @@ public class CallService {
 
             metricsService.decrementCalls();
             metricsService.addDuration(duration);
-            log.debug("Виклик оброблено: активні={}, загальна тривалість={}, завершені={}",
+            log.debug("call processed: active={}, total duration={}, completed={}",
                     metricsService.getActiveCalls(), metricsService.getTotalDuration(), metricsService.getCompletedCalls());
 
             Response ok = messageFactory.createResponse(Response.OK, req);
             evt.getServerTransaction().sendResponse(ok);
 
         } catch (Exception e) {
-            log.error("Помилка обробки BYE запиту{}", callId != null ? " для callId: " + callId : "", e);
+            log.error("Error processing BYE request{}\"", callId != null ? " by callId: " + callId : "", e);
             sendErrorResponse(evt, Response.SERVER_INTERNAL_ERROR);
         }
     }
@@ -61,7 +59,7 @@ public class CallService {
             Response error = messageFactory.createResponse(statusCode, evt.getRequest());
             evt.getServerTransaction().sendResponse(error);
         } catch (Exception ex) {
-            log.error("Невдача відправлення відповіді про помилку", ex);
+            log.error("Failure to send error response", ex);
         }
     }
 }

@@ -40,6 +40,7 @@ public class InviteService {
         String key = "registration:" + calleeUri;
         String nextHop = redis.opsForValue().get(key);
         if (nextHop == null) {
+            cdrService.onReject(callId, System.currentTimeMillis());
             reject(evt, Response.NOT_FOUND);
         } else {
             callId = ((CallIdHeader)req.getHeader(CallIdHeader.NAME)).getCallId();
@@ -53,6 +54,12 @@ public class InviteService {
 
     public void reject(RequestEvent evt, int status) {
         try {
+            String callId = ((CallIdHeader) evt.getRequest()
+                    .getHeader(CallIdHeader.NAME))
+                    .getCallId();
+            long ts = System.currentTimeMillis();
+            cdrService.onReject(callId, ts);
+
             ServerTransaction tx = evt.getServerTransaction();
             if (tx == null) {
                 tx = proxy.getSipProvider().getNewServerTransaction(evt.getRequest());

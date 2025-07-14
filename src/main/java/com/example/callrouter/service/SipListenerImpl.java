@@ -20,11 +20,13 @@ public class SipListenerImpl implements SipListener {
     private final RegisterService registerService;
     private final InviteService inviteService;
     private final CallService callService;
+    private final CdrService cdrService;
 
-    public SipListenerImpl(RegisterService registerService, @Lazy InviteService inviteService, CallService callService) {
+    public SipListenerImpl(RegisterService registerService, @Lazy InviteService inviteService, CallService callService, CdrService cdrService) {
         this.registerService = registerService;
         this.inviteService = inviteService;
         this.callService = callService;
+        this.cdrService = cdrService;
     }
 
     @Override
@@ -46,6 +48,10 @@ public class SipListenerImpl implements SipListener {
                 log.debug(">>> BYE received in Listener, callId={}", callId);
                 callService.handle(requestEvent);
                 break;
+            case Request.CANCEL:
+                log.debug(">>> CANCEL received, callId={}", callId);
+                cdrService.onMissed(callId, System.currentTimeMillis());
+                break;
             default:
                 inviteService.reject(requestEvent, Response.METHOD_NOT_ALLOWED);
         }
@@ -53,7 +59,23 @@ public class SipListenerImpl implements SipListener {
 
     @Override
     public void processResponse(ResponseEvent responseEvent) {
+        Response resp = responseEvent.getResponse();
+        int status = resp.getStatusCode();
+        String callId = ((CallIdHeader) resp.getHeader(CallIdHeader.NAME)).getCallId();
+        long timestamp = System.currentTimeMillis();
 
+        if (status == Response.BUSY_HERE) {          // 486
+            log.debug(">>> 486 Busy Here for call {}, marking as MISSED", callId);
+            cdrService.onMissed(callId, timestamp);
+
+        } else if (status == Response.DECLINE            // 603
+                || (status >= 400 && status < 600)) {
+            log.debug(">>> {} received for call {}, marking as REJECTED", status, callId);
+            cdrService.onReject(callId, timestamp);
+
+        } else {
+            log.trace(">>> Ignoring SIP response {} for call {}", status, callId);
+        }
     }
 
     @Override

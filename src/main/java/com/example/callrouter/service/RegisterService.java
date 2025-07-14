@@ -2,7 +2,6 @@ package com.example.callrouter.service;
 
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
-
 import javax.sip.SipProvider;
 import javax.sip.TransactionUnavailableException;
 import javax.sip.message.MessageFactory;
@@ -16,7 +15,6 @@ import javax.sip.header.FromHeader;
 import javax.sip.header.ContactHeader;
 
 @Service
-//@RequiredArgsConstructor
 public class RegisterService {
     private final RedisTemplate<String, String> redis;
     private final MessageFactory messageFactory;
@@ -61,6 +59,5 @@ public class RegisterService {
             throw new RuntimeException("Failed to send 200 OK for REGISTER", e);
         }
     }
-
 }
 
