@@ -1,5 +1,8 @@
 package com.example.callrouter.service;
 
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
 import javax.sip.SipProvider;
@@ -14,8 +17,10 @@ import javax.sip.message.Request;
 import javax.sip.header.FromHeader;
 import javax.sip.header.ContactHeader;
 
+
 @Service
 public class RegisterService {
+    private static final Logger log = LoggerFactory.getLogger(RegisterService.class);
     private final RedisTemplate<String, String> redis;
     private final MessageFactory messageFactory;
     private final SipProvider sipProvider;
@@ -35,6 +40,7 @@ public class RegisterService {
         String contactUri = ((ContactHeader) req.getHeader(ContactHeader.NAME))
                 .getAddress().getURI().toString();
         String key = "registration:" + userUri;
+        log.debug(">>> REGISTRATION user by {}", userUri);
         redis.opsForValue().set(key, contactUri, TTL);
 
         ServerTransaction tx = evt.getServerTransaction();

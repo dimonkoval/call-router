@@ -1,0 +1,208 @@
+:root {
+    --primary: #4361ee;
+    --secondary: #3f37c9;
+    --light: #f8f9fa;
+    --dark: #212529;
+    --success: #4cc9f0;
+    --border: #e0e0e0;
+}
+
+
+/*body {*/
+/*    !* прибираємо фонове зображення тут *!*/
+/*    background: none;*/
+/*    position: relative; !* щоб ::before “ліг” під контент *!*/
+/*    min-height: 100vh;*/
+/*}*/
+
+/*body::before {*/
+/*    content: "";*/
+/*    position: fixed;*/
+/*    top: 0; left: 0; right: 0; bottom: 0;*/
+/*    background: url("../images/background.jpg") center/cover no-repeat;*/
+/*    opacity: 0.4;             !* чим менше — тим прозоріше *!*/
+/*    z-index: -1;              !* під усім іншим контентом *!*/
+/*}*/
+
+body {
+    position: relative;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    /* ніякого background‑image тут! */
+}
+
+/* ———————————————————————————————————————————— */
+/* 1) Слой з самим зображенням — псевдо ::before */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url("../images/background.jpg") center/cover no-repeat;
+    z-index: -2;          /* під усім іншим */
+}
+
+/* ———————————————————————————————————————————— */
+/* 2) Колірний напівпрозорий оверлей — псевдо ::after */
+body::after {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(255, 255, 255, 0.5);
+    /* обираєш білий напівпрозорий шар;
+       якщо хочеш затемнити — заміни на rgba(0,0,0,0.5) */
+    z-index: -1;          /* поверх картинки, під контентом */
+}
+
+.header-bar {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    padding: 1.5rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 4px 20px rgba(67, 97, 238, 0.15);
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.table-container {
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+.table thead {
+    background: linear-gradient(to right, #f8f9fa, #e9ecef);
+    position: sticky;
+    top: 0;
+}
+
+.table th {
+    font-weight: 600;
+    color: var(--dark);
+    padding: 1rem 1.25rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.table td {
+    padding: 0.85rem 1.25rem;
+    vertical-align: middle;
+    border-top: 1px solid var(--border);
+}
+
+.table tbody tr {
+    transition: background-color 0.2s;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+.status-badge {
+    padding: 0.35em 0.65em;
+    border-radius: 50px;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.status-completed {
+    background-color: rgba(76, 201, 240, 0.15);
+    color: #0a9396;
+}
+
+.status-missed {
+    background-color: rgba(240, 84, 84, 0.15);
+    color: #d90429;
+}
+
+.status-rejected {
+    background-color: rgba(255, 159, 10, 0.15);
+    color: #ff9f0a;
+}
+
+.pagination .page-item .page-link {
+    border-radius: 8px;
+    margin: 0 3px;
+    border: none;
+    color: var(--primary);
+}
+
+.pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    box-shadow: 0 3px 10px rgba(67, 97, 238, 0.3);
+}
+
+.sort-icon {
+    margin-left: 5px;
+    font-size: 0.8em;
+    transition: transform 0.3s;
+}
+
+.sort-asc .sort-icon {
+    transform: rotate(180deg);
+}
+
+.duration-cell {
+    font-weight: 500;
+    color: var(--primary);
+}
+
+.call-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+}
+
+.call-incoming {
+    background-color: rgba(76, 201, 240, 0.2);
+    color: #0a9396;
+}
+
+.call-outgoing {
+    background-color: rgba(103, 194, 58, 0.2);
+    color: #2a9d8f;
+}
+
+.call-rejected {
+    background-color: rgba(255, 159, 10, 0.2);
+    color: #ff9f0a;
+}
+
+.sortable-header {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.sortable-header:hover {
+    color: var(--primary);
+}
+
+.compact-cell {
+    min-width: 120px;
+}
+
+.status-badge .small {
+    font-size: 0.75em;
+    opacity: 0.8;
+}
+
+.duration-cell {
+    font-weight: 500;
+    color: var(--primary);
+    min-width: 100px; /* Щоб не зміщувалось при зміні значень */
+}
