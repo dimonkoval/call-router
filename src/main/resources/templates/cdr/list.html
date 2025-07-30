@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Call Records Dashboard</title>
+    <link rel="icon" type="image/png" th:href="@{/android-chrome-192x192.png}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/custom.css}">
+
+<!--    <style th:inline="css">-->
+<!--        body {-->
+<!--            /* прибираємо фонове зображення тут */-->
+<!--            background: none;-->
+<!--            position: relative; /* щоб ::before “ліг” під контент */-->
+<!--            min-height: 100vh;-->
+<!--        }-->
+
+<!--        body::before {-->
+<!--            content: "";-->
+<!--            position: fixed;-->
+<!--            top: 0; left: 0; right: 0; bottom: 0;-->
+<!--            background: url("[[@{/images/background.jpg}]]") center/cover no-repeat;-->
+<!--            opacity: 0.4;             /* чим менше — тим прозоріше */-->
+<!--            z-index: -1;              /* під усім іншим контентом */-->
+<!--        }-->
+<!--    </style>-->
+</head>
+<body>
+<!-- Added th:with to capture search parameter safely -->
+<div class="header-bar" th:with="searchParam=${param.search != null ? param.search[0] : ''}">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-telephone me-2"></i>Call Detail Records
+            </h1>
+            <div class="d-flex align-items-center">
+                <form th:action="@{/cdr}" method="get" class="d-flex">
+                    <div class="input-group input-group-sm me-2" style="width: 250px;">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control"
+                               name="search"
+                               placeholder="Search records..."
+                               th:value="${searchParam}">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                    <!-- Reset button -->
+                    <a th:href="@{/cdr}" class="btn btn-secondary btn-sm ms-2">
+                        <i class="bi bi-arrow-repeat"></i> Reset
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main container using captured searchParam -->
+<div class="container mb-5" th:with="searchParam=${param.search != null ? param.search[0] : ''}">
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-container">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <!-- New ID Column -->
+                        <th>
+                            <a th:href="@{/cdr(page=0, size=${cdrPage.size}, sort='id', dir=${sort == 'id' ? (dir == 'asc' ? 'desc' : 'asc') : 'asc'}, search=${searchParam})}"
+                               class="text-decoration-none d-flex align-items-center sortable-header"
+                               th:classappend="${sort=='id'} ? 'text-primary sort-${dir}' : 'text-dark'">
+                                <span>ID</span>
+                                <i class="bi bi-arrow-down sort-icon"></i>
+                            </a>
+                        </th>
+
+                        <!-- Call ID Column -->
+                        <th>
+                            <a th:href="@{/cdr(page=0, size=${cdrPage.size}, sort='callId', dir=${sort == 'callId' ? (dir == 'asc' ? 'desc' : 'asc') : 'asc'}, search=${searchParam})}"
+                               class="text-decoration-none d-flex align-items-center sortable-header"
+                               th:classappend="${sort=='callId'} ? 'text-primary sort-${dir}' : 'text-dark'">
+                                <span>Call ID</span>
+                                <i class="bi bi-arrow-down sort-icon"></i>
+                            </a>
+                        </th>
+
+                        <!-- From Column -->
+                        <th class="compact-cell">
+                            <a th:href="@{/cdr(page=0, size=${cdrPage.size}, sort='fromNumber', dir=${sort == 'fromNumber' ? (dir == 'asc' ? 'desc' : 'asc') : 'asc'}, search=${searchParam})}"
+                               class="text-decoration-none d-flex align-items-center sortable-header"
+                               th:classappend="${sort=='fromNumber'} ? 'text-primary sort-${dir}' : 'text-dark'">
+                                <span>From</span>
+                                <i class="bi bi-arrow-down sort-icon"></i>
+                            </a>
+                        </th>
+
+                        <!-- To Column -->
+                        <th class="compact-cell">
+                            <a th:href="@{/cdr(page=0, size=${cdrPage.size}, sort='toNumber', dir=${sort == 'toNumber' ? (dir == 'asc' ? 'desc' : 'asc') : 'asc'}, search=${searchParam})}"
+                               class="text-decoration-none d-flex align-items-center sortable-header"
+                               th:classappend="${sort=='toNumber'} ? 'text-primary sort-${dir}' : 'text-dark'">
+                                <span>To</span>
+                                <i class="bi bi-arrow-down sort-icon"></i>
+                            </a>
+                        </th>
+
+                        <!-- Time Column -->
+                        <th class="compact-cell">
+                            <a th:href="@{/cdr(page=0, size=${cdrPage.size}, sort='startTime', dir=${sort == 'startTime' ? (dir == 'asc' ? 'desc' : 'asc') : 'asc'}, search=${searchParam})}"
+                               class="text-decoration-none d-flex align-items-center sortable-header"
+                               th:classappend="${sort=='startTime'} ? 'text-primary sort-${dir}' : 'text-dark'">
+                                <span>Time</span>
+                                <i class="bi bi-arrow-down sort-icon"></i>
+                            </a>
+                        </th>
+
+                        <!-- Status Column -->
+                        <th class="compact-cell">
+                            <a th:href="@{/cdr(page=0, size=${cdrPage.size}, sort='status', dir=${sort == 'status' ? (dir == 'asc' ? 'desc' : 'asc') : 'asc'}, search=${searchParam})}"
+                               class="text-decoration-none d-flex align-items-center sortable-header"
+                               th:classappend="${sort=='status'} ? 'text-primary sort-${dir}' : 'text-dark'">
+                                <span>Status</span>
+                                <i class="bi bi-arrow-down sort-icon"></i>
+                            </a>
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="cdr : ${cdrPage.content}">
+                        <!-- New ID Column -->
+                        <td th:text="${cdr.id}">ID</td>
+
+                        <!-- Call ID Column -->
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="call-icon"
+                                     th:classappend="${cdr.status == 'completed'} ? 'call-outgoing' :
+                                                     (${cdr.status == 'rejected'} ? 'call-rejected' : 'call-incoming')">
+                                    <i th:switch="${cdr.status}">
+                                        <i th:case="'completed'" class="bi bi-telephone-outbound"></i>
+                                        <i th:case="'rejected'" class="bi bi-slash-circle"></i>
+                                        <i th:case="*" class="bi bi-telephone-inbound"></i>
+                                    </i>
+                                </div>
+                                <span th:text="${cdr.callId}" class="fw-medium">CALLID</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column">
+                                <span th:text="${cdr.fromContactName}" class="fw-medium">FROM</span>
+                                <div th:if="${cdr.from != null and !cdr.from.isEmpty()}"
+                                     class="text-muted small">
+                                    <span th:text="${cdr.from}"></span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
+                            <span th:text="${cdr.to}" class="fw-medium">TO</span>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column">
+                                <div>
+                                    <span th:text="${cdr.formattedSetupTime}">START</span>
+                                </div>
+                                <!-- Answered Call -->
+                                <div th:if="${cdr.startTime != null and cdr.startTime > 0}" class="text-muted small">
+                                    <span>Answered: </span>
+                                    <span th:text="${cdr.formattedStartTime}"></span>
+                                </div>
+                                <!-- Unanswered Call -->
+                                <div th:if="${cdr.startTime == null or cdr.startTime == 0}" class="text-muted small">
+                                    <span>Not answered</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span th:switch="${#strings.toLowerCase(cdr.status)}">
+                                <span th:case="'completed'" class="status-badge status-completed">
+                                    <i class="bi bi-check-circle me-1"></i>Completed
+                                </span>
+                                <span th:case="'missed'" class="status-badge status-missed">
+                                    <i class="bi bi-x-circle me-1"></i>Missed
+                                </span>
+                                <span th:case="'rejected'" class="status-badge status-rejected">
+                                    <i class="bi bi-slash-circle me-1"></i>Rejected
+                                </span>
+                                <span th:case="*" class="status-badge">
+                                    <i class="bi bi-question-circle me-1"></i>
+                                    <span th:text="${cdr.status}">Status</span>
+                                </span>
+                            </span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item" th:classappend="${cdrPage.first} ? 'disabled'">
+                <a class="page-link"
+                   th:href="@{/cdr(page=${cdrPage.number-1}, size=${cdrPage.size}, sort=${sort}, dir=${dir}, search=${searchParam})}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, cdrPage.totalPages-1)}"
+                th:classappend="${i} == ${cdrPage.number} ? 'active'">
+                <a class="page-link"
+                   th:href="@{/cdr(page=${i}, size=${cdrPage.size}, sort=${sort}, dir=${dir}, search=${searchParam})}"
+                   th:text="${i+1}">1</a>
+            </li>
+
+            <li class="page-item" th:classappend="${cdrPage.last} ? 'disabled'">
+                <a class="page-link"
+                   th:href="@{/cdr(page=${cdrPage.number+1}, size=${cdrPage.size}, sort=${sort}, dir=${dir}, search=${searchParam})}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const rows = document.querySelectorAll('tbody tr');
+        rows.forEach((row, index) => {
+            row.style.opacity = '0';
+            row.style.transform = 'translateY(20px)';
+            row.style.transition = `opacity 0.3s ease, transform 0.3s ease ${index * 0.05}s`;
+
+            setTimeout(() => {
+                row.style.opacity = '1';
+                row.style.transform = 'translateY(0)';
+            }, 100);
+        });
+
+        const sortLinks = document.querySelectorAll('.sortable-header');
+        sortLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                sortLinks.forEach(l => {
+                    l.classList.remove('text-primary');
+                    l.classList.remove('sort-asc');
+                    l.classList.remove('sort-desc');
+                });
+                this.classList.add('text-primary');
+            });
+        });
+    });
+</script>
+</body>
+</html>

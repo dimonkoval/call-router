@@ -1,25 +1,27 @@
 package com.example.callrouter.service;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
+import java.time.Duration;
+
+import javax.sip.RequestEvent;
+import javax.sip.ServerTransaction;
+import javax.sip.header.CallIdHeader;
+import javax.sip.header.FromHeader;
+import javax.sip.header.ToHeader;
+import javax.sip.message.MessageFactory;
+import javax.sip.message.Request;
+import javax.sip.message.Response;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
-import javax.sip.RequestEvent;
-import javax.sip.ServerTransaction;
-import javax.sip.address.Address;
-import javax.sip.address.URI;
-import javax.sip.header.CallIdHeader;
-import javax.sip.header.FromHeader;
-import javax.sip.header.ToHeader;
-import javax.sip.message.*;
-
-import static org.mockito.Mockito.*;
-
-public class CallServiceTest {
+class CallServiceTest {
 
     @Mock
     private RedisTemplate<String, String> redisTemplate;
@@ -52,18 +54,6 @@ public class CallServiceTest {
     private ToHeader toHeader;
 
     @Mock
-    private Address fromAddress;
-
-    @Mock
-    private Address toAddress;
-
-    @Mock
-    private URI fromUri;
-
-    @Mock
-    private URI toUri;
-
-    @Mock
     private ServerTransaction serverTransaction;
 
     @Mock
@@ -72,46 +62,77 @@ public class CallServiceTest {
     @InjectMocks
     private CallService callService;
 
+    private final String callId = "test-call-123";
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+
+        // opsForValue() → valueOps
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
+
+        // перший setIfAbsent → true (тобто перший BYE обробляється)
+        when(valueOps.setIfAbsent("bye:" + callId, "1")).thenReturn(true);
+
+        // expire(...) повертає true
+        when(redisTemplate.expire(eq("bye:" + callId), any(Duration.class)))
+                .thenReturn(true);
     }
 
-    @Test
-    void testHandleByeRequest() throws Exception {
-        String callId = "test-call-123";
-        String startTime = String.valueOf(System.currentTimeMillis() - 1000);
 
-        // Stub headers
+    @Test
+    void testHandleByeRequest_FirstBye_CallsOnBye() throws Exception {
+        // --- підготовка даних для RequestEvent/Request
+        when(requestEvent.getRequest()).thenReturn(request);
+        when(requestEvent.getServerTransaction()).thenReturn(serverTransaction);
+
+        // заглушка заголовка Call-ID
         when(request.getHeader(CallIdHeader.NAME)).thenReturn(callIdHeader);
         when(callIdHeader.getCallId()).thenReturn(callId);
 
-        when(request.getHeader(FromHeader.NAME)).thenReturn(fromHeader);
-        when(fromHeader.getAddress()).thenReturn(fromAddress);
-        when(fromAddress.getURI()).thenReturn(fromUri);
-        when(fromUri.toString()).thenReturn("sip:userA@host");
+        // Redis: повертаємо рядок із часом старту
+        long fakeStart = System.currentTimeMillis() - 1_000;
+        when(valueOps.getAndDelete("call:" + callId)).thenReturn(String.valueOf(fakeStart));
 
-        when(request.getHeader(ToHeader.NAME)).thenReturn(toHeader);
-        when(toHeader.getAddress()).thenReturn(toAddress);
-        when(toAddress.getURI()).thenReturn(toUri);
-        when(toUri.toString()).thenReturn("sip:userB@host");
-
-        // Redis mocks
-        when(valueOps.getAndDelete("call:" + callId)).thenReturn(startTime);
-
-        // Request and response
-        when(requestEvent.getRequest()).thenReturn(request);
-        when(requestEvent.getServerTransaction()).thenReturn(serverTransaction);
+        // при створенні Response.OK
         when(messageFactory.createResponse(Response.OK, request)).thenReturn(response);
 
-        // Call method
+        // виклик методу
         callService.handle(requestEvent);
 
-        // Verify interactions
+        // перевіряємо, що onBye пішов у сервіс
         verify(cdrService).onBye(eq(callId), anyLong());
+
+        // перевіряємо, що лічильники знизилися і додано тривалість
         verify(metricsService).decrementCalls();
         verify(metricsService).addDuration(anyLong());
+
+        // і відповіли OK
+        verify(serverTransaction).sendResponse(response);
+    }
+
+    @Test
+    void testHandleByeRequest_SecondBye_Ignored() throws Exception {
+        // на другий виклик setIfAbsent повертаємо false
+        when(valueOps.setIfAbsent("bye:" + callId, "1")).thenReturn(false);
+
+        when(requestEvent.getRequest()).thenReturn(request);
+        when(requestEvent.getServerTransaction()).thenReturn(serverTransaction);
+        when(request.getHeader(CallIdHeader.NAME)).thenReturn(callIdHeader);
+        when(callIdHeader.getCallId()).thenReturn(callId);
+        when(messageFactory.createResponse(Response.OK, request)).thenReturn(response);
+
+        // перший виклик
+        callService.handle(requestEvent);
+        // очистимо інвокації
+        reset(cdrService, metricsService, serverTransaction);
+
+        // другий виклик
+        callService.handle(requestEvent);
+
+        // переконаємося, що onBye не виконується вдруге
+        verifyNoInteractions(cdrService, metricsService);
+        // але OK надсилається
         verify(serverTransaction).sendResponse(response);
     }
 }

@@ -8,21 +8,29 @@ services:
       POSTGRES_USER: appuser
       POSTGRES_PASSWORD: 123
       POSTGRES_DB: callrouter
+      DB_HOST: callrouter-db
+      DB_PORT: 5432
+      SIP_IP: 0.0.0.0
+      SIP_PORT: 5060
+      SPRING_PROFILES_ACTIVE: docker
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
     networks:
       - callrouter-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U appuser -d callrouter"]
       interval: 5s
-      timeout: 5s
+      timeout: 30s
       retries: 10
 
   redis:
     image: redis:7-alpine
     container_name: callrouter-redis
+    environment:
+      REDIS_HOST: "callrouter-redis"
+      REDIS_PORT: "6379"
     networks:
       - callrouter-net
 
@@ -31,18 +39,23 @@ services:
     container_name: callrouter-app
     ports:
       - "8090:8090"
-      - "5060:5060/udp"
+      - "5062:5060/udp"
     depends_on:
       callrouter-db:
         condition: service_healthy
       redis:
         condition: service_started
     environment:
-      DB_LOGIN:         "appuser"
-      DB_PASSWORD:      "123"
-      DB_NAME:          "callrouter"
-      SIP_IP:           "0.0.0.0"
-      SIP_PORT:         "5060"
+      DB_HOST: "callrouter-db"
+      DB_PORT: "5432"
+      DB_LOGIN: "appuser"
+      DB_PASSWORD: "123"
+      DB_NAME: "callrouter"
+      SIP_IP: "0.0.0.0"
+      SIP_PORT: "5060"
+      SERVER_PORT: 8090
+      REDIS_HOST: "callrouter-redis"
+      REDIS_PORT: "6379"
     networks:
       - callrouter-net
     healthcheck:
